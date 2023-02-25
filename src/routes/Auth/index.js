@@ -15,12 +15,12 @@ const {
 
 router.post("/register", registerUser);
 
-router.post("/login", loginUser);
+// router.post("/login", loginUser);
 
 
-router.post("/verify", verifyOTP);
+// router.post("/verify", verifyOTP);
 
-router.get("/me", checkAuth, fetchCurrentUser);
+// router.get("/me", checkAuth, fetchCurrentUser);
 
 // router.get("/admin", checkAuth, checkAdmin, handleAdmin);
 

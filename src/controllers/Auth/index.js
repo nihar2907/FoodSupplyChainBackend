@@ -16,11 +16,12 @@ const { generateOTP, fast2sms } = require("../../utils/otp");
 
 // --------------------- create new user ---------------------------------
 
-exports.createNewUser = async (req, res, next) => {
+exports.registerUser = async (req, res, next) => {
   try {
-    const { phone, name } = req.body;
-    // check duplicate phone Number
-    const phoneExist = await User.findOne({ phone });
+    const { mobile,password, name } = req.body;
+    console.log(mobile);
+    // check duplicate mobile Number
+    const phoneExist = await User.findOne({ mobile });
 
     if (phoneExist) {
       next({ status: 400, message: PHONE_ALREADY_EXISTS_ERR });
@@ -29,9 +30,10 @@ exports.createNewUser = async (req, res, next) => {
 
     // create new user
     const createUser = new User({
-      phone,
+      mobile,
       name,
-    //   role: phone === process.env.ADMIN_PHONE ? "ADMIN" : "USER",
+      password,
+    //   role: mobile === process.env.ADMIN_PHONE ? "ADMIN" : "USER",
       role:"CONSUMER"
     });
 
@@ -52,11 +54,11 @@ exports.createNewUser = async (req, res, next) => {
     // save otp to user collection
     user.phoneOtp = otp;
     await user.save();
-    // send otp to phone number
+    // send otp to mobile number
     await fast2sms(
       {
         message: `Your OTP is ${otp}`,
-        contactNumber: user.phone,
+        contactNumber: user.mobile,
       },
       next
     );
@@ -65,12 +67,12 @@ exports.createNewUser = async (req, res, next) => {
   }
 };
 
-// ------------ login with phone otp ----------------------------------
+// ------------ login with mobile otp ----------------------------------
 
 exports.loginWithPhoneOtp = async (req, res, next) => {
   try {
-    const { phone } = req.body;
-    const user = await User.findOne({ phone });
+    const { mobile } = req.body;
+    const user = await User.findOne({ mobile });
 
     if (!user) {
       next({ status: 400, message: PHONE_NOT_FOUND_ERR });
@@ -79,7 +81,7 @@ exports.loginWithPhoneOtp = async (req, res, next) => {
 
     res.status(201).json({
       type: "success",
-      message: "OTP sended to your registered phone number",
+      message: "OTP sended to your registered mobile number",
       data: {
         userId: user._id,
       },
@@ -91,11 +93,11 @@ exports.loginWithPhoneOtp = async (req, res, next) => {
     user.phoneOtp = otp;
     user.isAccountVerified = true;
     await user.save();
-    // send otp to phone number
+    // send otp to mobile number
     await fast2sms(
       {
         message: `Your OTP is ${otp}`,
-        contactNumber: user.phone,
+        contactNumber: user.mobile,
       },
       next
     );
@@ -104,7 +106,7 @@ exports.loginWithPhoneOtp = async (req, res, next) => {
   }
 };
 
-// ---------------------- verify phone otp -------------------------
+// ---------------------- verify mobile otp -------------------------
 
 exports.verifyPhoneOtp = async (req, res, next) => {
   try {
