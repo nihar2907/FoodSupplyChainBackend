@@ -9,14 +9,12 @@ const { API_ENDPOINT_NOT_FOUND_ERR, SERVER_ERR } = require("./errors");
 
 // routes
 const authRoutes = require("./routes/Auth/index");
-
+const productRoutes = require("./routes/Product/index");
 
 // init express app
 const app = express();
 
 // middlewares
-
-
 
 app.use(express.json());
 app.use(
@@ -28,14 +26,12 @@ app.use(
 );
 
 // log in development environment
-
 if (NODE_ENV === "development") {
   const morgan = require("morgan");
   app.use(morgan("dev"));
 }
 
 // index route
-
 app.get("/", (req, res) => {
   res.status(200).json({
     type: "success",
@@ -45,12 +41,10 @@ app.get("/", (req, res) => {
 });
 
 // routes middlewares
-
 app.use("/api/auth", authRoutes);
-
+app.use("/api/product", productRoutes);
 
 // page not found error handling  middleware
-
 app.use("*", (req, res, next) => {
   const error = {
     status: 404,
@@ -82,7 +76,7 @@ async function main() {
     });
 
     console.log("database connected");
-
+    
     app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
   } catch (error) {
     console.log(error);

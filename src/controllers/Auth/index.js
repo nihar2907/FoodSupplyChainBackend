@@ -1,17 +1,6 @@
 const User = require("../../models/user/index");
-
-const {
-  PHONE_NOT_FOUND_ERR,
-
-  PHONE_ALREADY_EXISTS_ERR,
-  USER_NOT_FOUND_ERR,
-  INCORRECT_OTP_ERR,
-  ACCESS_DENIED_ERR,
-} = require("../../errors");
-
-// const { checkPassword, hashPassword } = require("../utils/password.util");
+const { PHONE_NOT_FOUND_ERR, PHONE_ALREADY_EXISTS_ERR,USER_NOT_FOUND_ERR,INCORRECT_OTP_ERR} = require("../../errors");
 const { createJwtToken } = require("../../utils/token");
-
 const { generateOTP, fast2sms } = require("../../utils/otp");
 
 // --------------------- create new user ---------------------------------
@@ -19,9 +8,7 @@ const { generateOTP, fast2sms } = require("../../utils/otp");
 exports.registerUser = async (req, res, next) => {
   try {
     const { mobile, password, name } = req.body;
-
-    // check duplicate mobile Number
-    const phoneExist = await User.findOne({ mobile });
+    const phoneExist = await User.findOne({ mobile }); // check duplicate mobile Number
 
     if (phoneExist) {
       next({ status: 400, message: PHONE_ALREADY_EXISTS_ERR });
@@ -29,16 +16,7 @@ exports.registerUser = async (req, res, next) => {
     }
 
     // create new user
-    const createUser = new User({
-      mobile,
-      name,
-      password,
-      //   role: mobile === process.env.ADMIN_PHONE ? "ADMIN" : "USER",
-      role: "CONSUMER",
-    });
-
-    // save user
-
+    const createUser = new User({ mobile, name, password, role: "CONSUMER"});
     const user = await createUser.save();
 
     res.status(200).json({
@@ -49,14 +27,11 @@ exports.registerUser = async (req, res, next) => {
       },
     });
 
-    // generate otp
-    const otp = generateOTP(6);
-    // save otp to user collection
-    user.phoneOtp = otp;
-    await user.save();
-    // send otp to mobile number
-    await fast2sms(
-      {
+    const otp = generateOTP(6); // generate otp
+    user.phoneOtp = otp;        // save otp to user collection
+    
+    await user.save();          // send otp to mobile number
+    await fast2sms({
         message: `Your OTP is ${otp}`,
         contactNumber: user.mobile,
       },
@@ -89,35 +64,32 @@ exports.loginUser = async (req, res, next) => {
         data: {
           token,
           user,
-        }
+        },
       });
     }
-
-    // generate otp
   } catch (error) {
     next(error);
   }
 };
+
 // ---------------------- verify mobile otp -------------------------
 exports.verifyOtp = async (req, res, next) => {
   try {
-    const { otp, userId, mobile } = req.body;
-    const user = await User.findOne({
-      mobile: mobile,
-    });
-
+    const { otp, mobile } = req.body;
+    const user = await User.findOne({ mobile });
+    
     if (!user) {
       next({ status: 400, message: USER_NOT_FOUND_ERR });
       return;
     }
-
+    
     if (user.phoneOtp !== otp) {
       next({ status: 400, message: INCORRECT_OTP_ERR });
       return;
     }
+    
     const token = createJwtToken({ userId: user._id });
-
-    user.phoneOtp = "";
+    // user.phoneOtp = "";
     await user.save();
 
     res.status(201).json({
@@ -132,39 +104,3 @@ exports.verifyOtp = async (req, res, next) => {
     next(error);
   }
 };
-
-// --------------- fetch current user -------------------------
-
-exports.fetchCurrentUser = async (req, res, next) => {
-  try {
-    const currentUser = res.locals.user;
-
-    return res.status(200).json({
-      type: "success",
-      message: "fetch current user",
-      data: {
-        user: currentUser,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// --------------- admin access only -------------------------
-
-// exports.handleAdmin = async (req, res, next) => {
-//   try {
-//     const currentUser = res.locals.user;
-
-//     return res.status(200).json({
-//       type: "success",
-//       message: "Okay you are admin!!",
-//       data: {
-//         user: currentUser,
-//       },
-//     });
-//   } catch (error) {
-//     next(error);
-//   }
-// };

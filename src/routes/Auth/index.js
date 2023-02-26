@@ -3,26 +3,15 @@ const router = express.Router();
 
 
 const checkAuth = require("../../middlewares/chechAuth");
-// const checkAdmin = require("../../middlewares/checkAdmin");
-const {
-  fetchCurrentUser,
-  loginUser,
-  registerUser,
-  verifyOtp,
-  handleAdmin
-} = require("../../controllers/Auth/index");
+const { loginUser, registerUser, verifyOtp } = require("../../controllers/Auth/index");
 
-
+//  Post Requests
 router.post("/register", registerUser);
-
 router.post("/login", loginUser);
-
-
 router.post("/verify", verifyOtp);
 
-// router.get("/me", checkAuth, fetchCurrentUser);
 
-// router.get("/admin", checkAuth, checkAdmin, handleAdmin);
+// Get Requests
+
 
 module.exports = router;
-// api endpoint on route -> it calls controller -> service(contains business logic) -> refers to models and middelwares
