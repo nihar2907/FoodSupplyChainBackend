@@ -18,8 +18,8 @@ const { generateOTP, fast2sms } = require("../../utils/otp");
 
 exports.registerUser = async (req, res, next) => {
   try {
-    const { mobile,password, name } = req.body;
-    console.log(mobile);
+    const { mobile, password, name } = req.body;
+
     // check duplicate mobile Number
     const phoneExist = await User.findOne({ mobile });
 
@@ -33,8 +33,8 @@ exports.registerUser = async (req, res, next) => {
       mobile,
       name,
       password,
-    //   role: mobile === process.env.ADMIN_PHONE ? "ADMIN" : "USER",
-      role:"CONSUMER"
+      //   role: mobile === process.env.ADMIN_PHONE ? "ADMIN" : "USER",
+      role: "CONSUMER",
     });
 
     // save user
@@ -68,50 +68,44 @@ exports.registerUser = async (req, res, next) => {
 };
 
 // ------------ login with mobile otp ----------------------------------
-
-exports.loginWithPhoneOtp = async (req, res, next) => {
+exports.loginUser = async (req, res, next) => {
   try {
-    const { mobile } = req.body;
+    const { mobile, password } = req.body;
     const user = await User.findOne({ mobile });
 
     if (!user) {
       next({ status: 400, message: PHONE_NOT_FOUND_ERR });
       return;
     }
-
-    res.status(201).json({
-      type: "success",
-      message: "OTP sended to your registered mobile number",
-      data: {
-        userId: user._id,
-      },
-    });
+    if (user.password !== password) {
+      next({ status: 400, message: "Invalid credentials" });
+      return;
+    }
+    if (user.password === password) {
+      const token = createJwtToken({ userId: user._id });
+      res.status(201).json({
+        type: "success",
+        message: "Logged in",
+        data: {
+          token,
+          user,
+        }
+      });
+    }
 
     // generate otp
-    const otp = generateOTP(6);
-    // save otp to user collection
-    user.phoneOtp = otp;
-    user.isAccountVerified = true;
-    await user.save();
-    // send otp to mobile number
-    await fast2sms(
-      {
-        message: `Your OTP is ${otp}`,
-        contactNumber: user.mobile,
-      },
-      next
-    );
   } catch (error) {
     next(error);
   }
 };
-
 // ---------------------- verify mobile otp -------------------------
-
-exports.verifyPhoneOtp = async (req, res, next) => {
+exports.verifyOtp = async (req, res, next) => {
   try {
-    const { otp, userId } = req.body;
-    const user = await User.findById(userId);
+    const { otp, userId, mobile } = req.body;
+    const user = await User.findOne({
+      mobile: mobile,
+    });
+
     if (!user) {
       next({ status: 400, message: USER_NOT_FOUND_ERR });
       return;

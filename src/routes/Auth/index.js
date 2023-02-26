@@ -8,17 +8,17 @@ const {
   fetchCurrentUser,
   loginUser,
   registerUser,
-  verifyOTP,
+  verifyOtp,
   handleAdmin
 } = require("../../controllers/Auth/index");
 
 
 router.post("/register", registerUser);
 
-// router.post("/login", loginUser);
+router.post("/login", loginUser);
 
 
-// router.post("/verify", verifyOTP);
+router.post("/verify", verifyOtp);
 
 // router.get("/me", checkAuth, fetchCurrentUser);
 
