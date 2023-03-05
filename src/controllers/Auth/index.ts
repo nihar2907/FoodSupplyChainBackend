@@ -16,9 +16,7 @@ import {Request, Response, NextFunction} from 'express';
 const registerUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { mobile, password, name } = req.body;
-
-    // check duplicate mobile Number
-    const phoneExist = await User.findOne({ mobile });
+    const phoneExist = await User.findOne({ mobile }); // check duplicate mobile Number
 
     if (phoneExist) {
       next({ status: 400, message: PHONE_ALREADY_EXISTS });
@@ -26,16 +24,7 @@ const registerUser = async (req: Request, res: Response, next: NextFunction) => 
     }
 
     // create new user
-    const createUser = new User({
-      mobile,
-      name,
-      password,
-      //   role: mobile === process.env.ADMIN_PHONE ? "ADMIN" : "USER",
-      role: "CONSUMER",
-    });
-
-    // save user
-
+    const createUser = new User({ mobile, name, password, role: "CONSUMER"});
     const user = await createUser.save();
 
     res.status(200).json({
@@ -90,8 +79,6 @@ const loginUser = async (req: Request, res: Response, next: NextFunction) => {
         },
       });
     }
-
-    // generate otp
   } catch (error) {
     next(error);
   }
@@ -100,20 +87,19 @@ const loginUser = async (req: Request, res: Response, next: NextFunction) => {
 // ---------------------- verify mobile otp -------------------------
 const verifyOtp = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { otp, userId, mobile } = req.body;
-    const user = await User.findOne({
-      mobile: mobile,
-    });
-
+    const { otp, mobile } = req.body;
+    const user = await User.findOne({ mobile });
+    
     if (!user) {
       next({ status: 400, message: USER_NOT_FOUND });
       return;
     }
-
+    
     if (user.phoneOtp !== otp) {
       next({ status: 400, message: INCORRECT_OTP });
       return;
     }
+    
     const token = createJwtToken({ userId: user._id });
 
     user.phoneOtp = -1;

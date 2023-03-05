@@ -20,7 +20,6 @@ const userSchema = new Schema(
       type: String,
       trim: true,
     },
-
     mobile: {
       type: Number,
       required: true,
