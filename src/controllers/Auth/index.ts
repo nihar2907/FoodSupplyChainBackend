@@ -1,22 +1,19 @@
-const User = require("../../models/user/index");
-
-const {
-  PHONE_NOT_FOUND_ERR,
-
-  PHONE_ALREADY_EXISTS_ERR,
-  USER_NOT_FOUND_ERR,
-  INCORRECT_OTP_ERR,
-  ACCESS_DENIED_ERR,
-} = require("../../errors");
+import User from "../../models/user";
+import { createJwtToken } from "../../utils/token";
+import { generateOTP, fast2SMS } from "../../utils/otp";
+import {
+  INCORRECT_OTP,
+  PHONE_ALREADY_EXISTS,
+  PHONE_NOT_FOUND,
+  USER_NOT_FOUND,
+} from "../../errors";
+import {Request, Response, NextFunction} from 'express';
 
 // const { checkPassword, hashPassword } = require("../utils/password.util");
-const { createJwtToken } = require("../../utils/token");
-
-const { generateOTP, fast2sms } = require("../../utils/otp");
 
 // --------------------- create new user ---------------------------------
 
-exports.registerUser = async (req, res, next) => {
+const registerUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { mobile, password, name } = req.body;
 
@@ -24,7 +21,7 @@ exports.registerUser = async (req, res, next) => {
     const phoneExist = await User.findOne({ mobile });
 
     if (phoneExist) {
-      next({ status: 400, message: PHONE_ALREADY_EXISTS_ERR });
+      next({ status: 400, message: PHONE_ALREADY_EXISTS });
       return;
     }
 
@@ -52,10 +49,10 @@ exports.registerUser = async (req, res, next) => {
     // generate otp
     const otp = generateOTP(6);
     // save otp to user collection
-    user.phoneOtp = otp;
+    user.phoneOtp = Number(otp);
     await user.save();
     // send otp to mobile number
-    await fast2sms(
+    await fast2SMS(
       {
         message: `Your OTP is ${otp}`,
         contactNumber: user.mobile,
@@ -68,13 +65,14 @@ exports.registerUser = async (req, res, next) => {
 };
 
 // ------------ login with mobile otp ----------------------------------
-exports.loginUser = async (req, res, next) => {
+const loginUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { mobile, password } = req.body;
+    console.log(mobile, password);
     const user = await User.findOne({ mobile });
 
     if (!user) {
-      next({ status: 400, message: PHONE_NOT_FOUND_ERR });
+      next({ status: 400, message: PHONE_NOT_FOUND });
       return;
     }
     if (user.password !== password) {
@@ -89,7 +87,7 @@ exports.loginUser = async (req, res, next) => {
         data: {
           token,
           user,
-        }
+        },
       });
     }
 
@@ -98,8 +96,9 @@ exports.loginUser = async (req, res, next) => {
     next(error);
   }
 };
+
 // ---------------------- verify mobile otp -------------------------
-exports.verifyOtp = async (req, res, next) => {
+const verifyOtp = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { otp, userId, mobile } = req.body;
     const user = await User.findOne({
@@ -107,17 +106,17 @@ exports.verifyOtp = async (req, res, next) => {
     });
 
     if (!user) {
-      next({ status: 400, message: USER_NOT_FOUND_ERR });
+      next({ status: 400, message: USER_NOT_FOUND });
       return;
     }
 
     if (user.phoneOtp !== otp) {
-      next({ status: 400, message: INCORRECT_OTP_ERR });
+      next({ status: 400, message: INCORRECT_OTP });
       return;
     }
     const token = createJwtToken({ userId: user._id });
 
-    user.phoneOtp = "";
+    user.phoneOtp = -1;
     await user.save();
 
     res.status(201).json({
@@ -135,7 +134,7 @@ exports.verifyOtp = async (req, res, next) => {
 
 // --------------- fetch current user -------------------------
 
-exports.fetchCurrentUser = async (req, res, next) => {
+const fetchCurrentUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const currentUser = res.locals.user;
 
@@ -151,9 +150,18 @@ exports.fetchCurrentUser = async (req, res, next) => {
   }
 };
 
+const authController = {
+  loginUser,
+  verifyOtp,
+  registerUser,
+  fetchCurrentUser,
+};
+
+export default authController;
+
 // --------------- admin access only -------------------------
 
-// exports.handleAdmin = async (req, res, next) => {
+// exports.handleAdmin = async (req: Request, res: Response, next: NextFunction) => {
 //   try {
 //     const currentUser = res.locals.user;
 
