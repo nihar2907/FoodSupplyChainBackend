@@ -3,7 +3,9 @@ import authController from "../../controllers/Auth";
 
 const { fetchCurrentUser, registerUser, loginUser, verifyOtp } = authController;
 
-export const authRoutes = express.Router();
+const {Router} = express;
+
+export const authRoutes = Router();
 
 authRoutes.post("/register", registerUser);
 
